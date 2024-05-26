@@ -2,11 +2,24 @@
   <PageWrapper title="表单基础示例">
     <CollapseContainer title="基础示例">
       <BasicForm
+        ref="basicForm1"
         autoFocusFirstItem
         :labelWidth="200"
         :schemas="schemas"
-        :actionColOptions="{ span: 24 }"
         :labelCol="{ span: 8 }"
+        :wrapperCol="{
+          span: 10,
+        }"
+        :actionColOptions="{
+          offset: 8,
+          span: 12,
+        }"
+        :submitButtonOptions="{
+          text: '提交',
+        }"
+        :oldValue="oldValue"
+        @validate-success="handleValidateSuccess"
+        @validate-error="handleValidateError"
         @submit="handleSubmit"
         @reset="handleReset"
       >
@@ -44,11 +57,36 @@
           />
         </template>
       </BasicForm>
+      <BasicForm
+        ref="basicForm2"
+        autoFocusFirstItem
+        :labelWidth="200"
+        :schemas="schemas"
+        :actionColOptions="{ span: 24 }"
+        :labelCol="{ span: 8 }"
+        :oldValue="oldValue"
+        @validate-success="handleValidateSuccess"
+        @validate-error="handleValidateError"
+        @submit="handleSubmit"
+        @reset="handleReset"
+      />
+      <a-row>
+        <a-col :md="8" :sm="8">
+          <span style="float: left; overflow: hidden" class="table-page-search-submitButtons">
+            <a-col :lg="6">
+              <a-button type="primary" preIcon="ant-design:reload-outlined" @click="callChildFormMethods">调用所有子表单组件方法</a-button>
+              <a-button type="primary" preIcon="ant-design:search-outlined" @click="callChildFormReset" style="margin-left: 8px"
+                >重置所有子表单组件方法</a-button
+              >
+            </a-col>
+          </span>
+        </a-col>
+      </a-row>
     </CollapseContainer>
   </PageWrapper>
 </template>
 <script lang="ts">
-  import { computed, defineComponent, unref, ref } from 'vue';
+  import { computed, defineComponent, unref, ref, onMounted } from 'vue';
   import { BasicForm, FormSchema, ApiSelect, JAreaLinkage } from '/@/components/Form/index';
   import { CollapseContainer } from '/@/components/Container';
   import { useMessage } from '/@/hooks/web/useMessage';
@@ -76,6 +114,34 @@
       op.disabled = unref(valueSelectA).indexOf(op.value) !== -1;
       return op;
     });
+  });
+  const oldValue = computed(() => {
+    return {
+      // field1: 'field1',
+      // field2: 'field2',
+      field3: 'field3',
+      // field4: 'field4',
+      field5: 'field5',
+      // field7: 'field7',
+      field8: 'field8',
+      // field9: 'field9',
+      field10: 'field10',
+      // field11: 'field11',
+      // field30: 'field30',
+      // field311: 'field311',
+      // field31: 'field31',
+      // field32: 'field32',
+      // field33: 'field33',
+      // field34: 'field34',
+      // field35: 'field35',
+      // province: 'province',
+      // city: 'city',
+      // selectA: 'selectA',
+      // selectB: 'selectB',
+      // field20: 'field20',
+      // field21: 'field21',
+      // field22: 'field22',
+    };
   });
   const provincesOptions = [
     {
@@ -160,9 +226,8 @@
           suffix: () => 'sSlot',
         };
       },
-      suffix: '@',
       showTooltip: true,
-      tooltip: 'prompt text',
+      tooltip: '新建',
     },
     {
       field: 'field2',
@@ -186,7 +251,6 @@
       colProps: {
         span: 8,
       },
-      suffix: '@',
     },
     {
       field: 'field4',
@@ -229,9 +293,8 @@
           },
         ],
       },
-      suffix: '@',
       showTooltip: true,
-      tooltip: 'prompt text',
+      tooltip: '无数据',
     },
     {
       field: 'field7',
@@ -593,6 +656,8 @@
       ASelect: Select,
     },
     setup() {
+      const basicForm1 = ref(null);
+      const basicForm2 = ref(null);
       const check = ref(null);
       const { createMessage } = useMessage();
       const keyword = ref<string>('');
@@ -607,11 +672,50 @@
         alert(value);
       }
 
+      const getAllForm = () => {
+        console.log('getAllForm');
+        return [basicForm1, basicForm2].map((_form) => _form.value?.formElRef);
+      };
+
+      const callChildFormReset = async () => {
+        getAllForm().forEach((_form) => {
+          _form?.resetFields();
+        });
+      };
+
+      const callChildFormMethods = async () => {
+        try {
+          const allForm = getAllForm();
+          const allResult = await Promise.all(allForm.map((form) => form?.validateFields()));
+          // let res1 = null;
+          // let res2 = null;
+          // res1 = await form1Ref?.validateFields();
+          // res2 = await form2Ref?.validateFields();
+          console.log('所有表单验证通过:', allResult);
+        } catch (error) {
+          console.log('error:', error);
+        }
+        // const res1 = await basicForm1.value?.validateFields();
+        // const res2 = await basicForm2.value?.validateFields();
+
+        // 调用更多子组件的方法...
+        console.log('onMounted basicForm:', {
+          allForm,
+          getSchema1: basicForm1.value?.getSchema,
+          getSchema2: basicForm2.value?.getSchema,
+        });
+      };
+
+      onMounted(() => {
+        // callChildFormMethods();
+      });
+
       return {
         schemas,
         optionsListApi,
         optionsA,
         optionsB,
+        oldValue,
         valueSelectA,
         valueSelectB,
         onSearch: useDebounceFn(onSearch, 300),
@@ -619,9 +723,24 @@
         handleReset: () => {
           keyword.value = '';
         },
+        handleValidateSuccess: (values: any) => {
+          createMessage.info('handleValidateSuccess');
+          console.log(values);
+        },
+        handleValidateError: (errorValues: any) => {
+          const num = errorValues?.errorFields?.length;
+          if (num > 0) {
+            createMessage.warn('共有' + num + '个字段验证失败!');
+          }
+          console.log('handleValidateError', errorValues);
+        },
         handleSubmit: (values: any) => {
           createMessage.success('click search,values:' + JSON.stringify(values));
         },
+        basicForm1,
+        basicForm2,
+        callChildFormReset,
+        callChildFormMethods,
         check,
       };
     },

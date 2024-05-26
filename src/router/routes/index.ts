@@ -65,5 +65,26 @@ export const TokenLoginRoute: AppRouteRecordRaw = {
   },
 };
 
+/**
+ * 流程表单
+ */
+export const FLOW_FORM: AppRouteRecordRaw = {
+  path: PageEnum.FLOW_FORM,
+  name: 'FlowForm',
+  component: () => import('@/views/demo/form/flow/FlowPage.vue'),
+  meta: {
+    title: '流程表单',
+  },
+};
+
 // Basic routing without permission
-export const basicRoutes = [LoginRoute, RootRoute, ...mainOutRoutes, REDIRECT_ROUTE, PAGE_NOT_FOUND_ROUTE, TokenLoginRoute, Oauth2LoginRoute];
+export const basicRoutes = [
+  LoginRoute,
+  RootRoute,
+  ...mainOutRoutes,
+  REDIRECT_ROUTE,
+  PAGE_NOT_FOUND_ROUTE,
+  TokenLoginRoute,
+  Oauth2LoginRoute,
+  FLOW_FORM,
+];

@@ -1,10 +1,11 @@
 <script lang="tsx">
   import { NamePath, ValidateOptions } from 'ant-design-vue/lib/form/interface';
-  import type { PropType, Ref } from 'vue';
+  import { onMounted, PropType, ref, Ref } from 'vue';
   import type { FormActionType, FormProps } from '../types/form';
   import type { FormSchema } from '../types/form';
   import type { ValidationRule } from 'ant-design-vue/lib/form/Form';
   import type { TableActionType } from '/@/components/Table';
+  import { Icon } from '/@/components/Icon';
   import { defineComponent, computed, unref, toRefs } from 'vue';
   import { Form, Col, Divider } from 'ant-design-vue';
   import { componentMap } from '../componentMap';
@@ -85,7 +86,7 @@
         }
         if (schema.component === 'Divider') {
           //update-begin---author:wangshuai---date:2023-09-22---for:【QQYUN-6603】分割线标题位置显示不正确---
-          componentProps = Object.assign({ type: 'horizontal',orientation:'left', plain: true, }, componentProps);
+          componentProps = Object.assign({ type: 'horizontal', orientation: 'left', plain: true }, componentProps);
           //update-end---author:wangshuai---date:2023-09-22---for:【QQYUN-6603】分割线标题位置显示不正确---
         }
         return componentProps as Recordable;
@@ -285,7 +286,6 @@
         const propsData: Recordable = {
           allowClear: true,
           getPopupContainer: (trigger: Element) => {
-
             return trigger?.parentNode;
           },
           size,
@@ -364,8 +364,16 @@
         );
       }
 
+      const formItemDiv = ref(null);
+      function getPopupContainer() {
+        return formItemDiv.value;
+      }
+      // onMounted(() => {
+      //   console.log('wwwww', formItemDiv.value); // 这将输出根元素的 DOM 对象
+      // });
+
       function renderItem() {
-        const { itemProps, slot, render, field, suffix, component } = props.schema;
+        const { itemProps, slot, render, field, suffix, tooltip, showTooltip, component } = props.schema;
         const { labelCol, wrapperCol } = unref(itemLabelWidthProp);
         const { colon } = props.formProps;
 
@@ -382,6 +390,13 @@
 
           const showSuffix = !!suffix;
           const getSuffix = isFunction(suffix) ? suffix(unref(getValues)) : suffix;
+          const getTooltip = isFunction(tooltip) ? (
+            tooltip(unref(getValues))
+          ) : (
+            <a-tooltip title={tooltip} open={showTooltip} getPopupContainer={getPopupContainer}>
+              <Icon icon="ant-design:exclamation-circle" style="color: red" />
+            </a-tooltip>
+          );
 
           return (
             <Form.Item
@@ -394,10 +409,11 @@
               labelCol={labelCol}
               wrapperCol={wrapperCol}
             >
-              <div style="display:flex">
+              <div style="display:flex" ref={formItemDiv}>
                 {/* author: sunjianlei for: 【VUEN-744】此处加上 width: 100%; 因为要防止组件宽度超出 FormItem */}
                 <div style="flex:1; width: 100%;">{getContent()}</div>
                 {showSuffix && <span class="suffix">{getSuffix}</span>}
+                {showTooltip && <span class="form-item-tooltip">{getTooltip}</span>}
               </div>
             </Form.Item>
           );

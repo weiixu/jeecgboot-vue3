@@ -71,6 +71,8 @@ export interface FormProps {
 
   // Form configuration rules
   schemas?: FormSchema[];
+  /** 历史比较数据 */
+  oldValue?: Record<string, any>;
   // Function values used to merge into dynamic control form items
   mergeDynamicData?: Recordable;
   // Compact mode for search forms
@@ -153,6 +155,9 @@ export interface FormSchema {
 
   suffix?: string | number | ((values: RenderCallbackParams) => string | number);
 
+  showTooltip?: boolean | ((values: RenderCallbackParams) => boolean);
+  tooltip?: string | number | ((values: RenderCallbackParams) => string | number);
+
   // Validation rules
   rules?: Rule[];
   // Check whether the information is added to the label
@@ -195,14 +200,14 @@ export interface FormSchema {
   // update-begin--author:liaozhiyang---date:20240308---for：【QQYUN-8377】formSchema props支持动态修改
   // 设置组件props的key
   dynamicPropskey?: string;
-  dynamicPropsVal?: ((renderCallbackParams: RenderCallbackParams) => any);
+  dynamicPropsVal?: (renderCallbackParams: RenderCallbackParams) => any;
   // update-end--author:liaozhiyang---date:20240308---for：【QQYUN-8377】formSchema props支持动态修改
 
   // 这个属性自定义的 用于自定义的业务 比如在表单打开的时候修改表单的禁用状态，但是又不能重写componentProps，因为他的内容太多了，所以使用dynamicDisabled和buss实现
   buss?: any;
-  
+
   //label字数控制（label宽度）
-  labelLength?: number
+  labelLength?: number;
 }
 export interface HelpComponentProps {
   maxWidth: string;
