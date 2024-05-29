@@ -2,11 +2,6 @@
   import { defineComponent } from 'vue';
   import { CollapseContainer } from '/@/components/Container/index';
 
-  interface IProps {
-    id: string;
-    title: string;
-  }
-
   export default defineComponent({
     name: 'FlowForm',
     components: { CollapseContainer },
@@ -15,7 +10,7 @@
       id: String,
       title: String,
     },
-    setup(props: IProps, { slots }) {
+    setup(props, { slots }) {
       console.log('setup props:', props);
       const { title, id } = props;
       return () => {

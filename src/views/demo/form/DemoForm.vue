@@ -1,5 +1,5 @@
 <template>
-  <PageWrapper title="表单基础示例">
+  <PageWrapper title="表单示例">
     <CollapseContainer title="基础示例">
       <BasicForm
         ref="basicForm1"
@@ -19,7 +19,11 @@
         }"
         :oldValue="oldValue"
         @validate-success="handleValidateSuccess"
-        @validate-error="handleValidateError"
+        @validate-error="
+          (value) => {
+            handleValidateError(value, 'basicForm1');
+          }
+        "
         @submit="handleSubmit"
         @reset="handleReset"
       >
@@ -66,27 +70,32 @@
         :labelCol="{ span: 8 }"
         :oldValue="oldValue"
         @validate-success="handleValidateSuccess"
-        @validate-error="handleValidateError"
+        @validate-error="
+          (value) => {
+            handleValidateError(value, 'basicForm2');
+          }
+        "
         @submit="handleSubmit"
         @reset="handleReset"
       />
-      <a-row>
-        <a-col :md="8" :sm="8">
-          <span style="float: left; overflow: hidden" class="table-page-search-submitButtons">
-            <a-col :lg="6">
-              <a-button type="primary" preIcon="ant-design:reload-outlined" @click="callChildFormMethods">调用所有子表单组件方法</a-button>
-              <a-button type="primary" preIcon="ant-design:search-outlined" @click="callChildFormReset" style="margin-left: 8px"
-                >重置所有子表单组件方法</a-button
-              >
-            </a-col>
-          </span>
-        </a-col>
-      </a-row>
+      <Anchor :items="getAnchorItems(anchorItems)">
+        <template #customTitle="item">
+          <div>
+            {{ item.title }}
+            <span class="fields-error" v-if="item.fieldsError > 0">{{ item.fieldsError }}</span>
+          </div>
+        </template>
+      </Anchor>
+      <div class="btn-group">
+        <a-button type="primary" preIcon="ant-design:reload-outlined" @click="callAllFormSubmit" style="margin-left: 8px">提交全部表单</a-button>
+        <a-button type="primary" @click="callAllFormValidate" style="margin-left: 8px">验证全部表单</a-button>
+        <a-button type="primary" @click="callAllFormReset" style="margin-left: 8px">重置全部表单</a-button>
+      </div>
     </CollapseContainer>
   </PageWrapper>
 </template>
 <script lang="ts">
-  import { computed, defineComponent, unref, ref, onMounted } from 'vue';
+  import { computed, defineComponent, unref, ref, onMounted, reactive } from 'vue';
   import { BasicForm, FormSchema, ApiSelect, JAreaLinkage } from '/@/components/Form/index';
   import { CollapseContainer } from '/@/components/Container';
   import { useMessage } from '/@/hooks/web/useMessage';
@@ -95,7 +104,7 @@
   import { optionsListApi } from '/@/api/demo/select';
   import { useDebounceFn } from '@vueuse/core';
   import { treeOptionsListApi } from '/@/api/demo/tree';
-  import { Select } from 'ant-design-vue';
+  import { Select, Anchor } from 'ant-design-vue';
   import { cloneDeep } from 'lodash-es';
 
   const valueSelectA = ref<string[]>([]);
@@ -646,6 +655,26 @@
     },
   ];
 
+  /** 获取锚点列表数据，支持过滤处理 */
+  const anchorItems = reactive([
+    {
+      key: 'basicForm1',
+      href: '#basicForm1',
+      title: 'BaseForm1',
+      fieldsError: 0,
+    },
+    {
+      key: 'basicForm2',
+      href: '#basicForm2',
+      title: 'BaseForm2',
+      fieldsError: 0,
+    },
+  ]);
+  /** 获取锚点列表数据，支持过滤处理 */
+  const getAnchorItems = (dataList) => {
+    return dataList;
+  };
+
   export default defineComponent({
     components: {
       BasicForm,
@@ -654,10 +683,9 @@
       ApiSelect,
       JAreaLinkage,
       ASelect: Select,
+      Anchor,
     },
     setup() {
-      const basicForm1 = ref(null);
-      const basicForm2 = ref(null);
       const check = ref(null);
       const { createMessage } = useMessage();
       const keyword = ref<string>('');
@@ -668,25 +696,33 @@
       function onSearch(value: string) {
         keyword.value = value;
       }
-      function areaChange(value) {
-        alert(value);
-      }
 
+      /** 表单组 */
+      const basicForm1 = ref(null);
+      const basicForm2 = ref(null);
+      const basicFormList = [basicForm1, basicForm2];
       const getAllForm = () => {
-        console.log('getAllForm');
-        return [basicForm1, basicForm2].map((_form) => _form.value?.formElRef);
+        return basicFormList.map((_form) => _form.value);
+      };
+      const getAllFormRef = () => {
+        return basicFormList.map((_form) => _form.value?.formElRef);
+      };
+      const callAllFormSubmit = async () => {
+        getAllForm().forEach((_form) => {
+          _form?.submit();
+        });
       };
 
-      const callChildFormReset = async () => {
+      const callAllFormReset = async () => {
         getAllForm().forEach((_form) => {
           _form?.resetFields();
         });
       };
 
-      const callChildFormMethods = async () => {
+      const callAllFormValidate = async () => {
         try {
-          const allForm = getAllForm();
-          const allResult = await Promise.all(allForm.map((form) => form?.validateFields()));
+          const allResult = await Promise.all(getAllForm().map((form) => form?.validate()));
+          // const allResult = await Promise.all(getAllFormRef().map((form) => form?.validateFields()));
           // let res1 = null;
           // let res2 = null;
           // res1 = await form1Ref?.validateFields();
@@ -700,18 +736,38 @@
 
         // 调用更多子组件的方法...
         console.log('onMounted basicForm:', {
-          allForm,
+          allForm: getAllForm(),
+          getAllFormRef: getAllFormRef(),
           getSchema1: basicForm1.value?.getSchema,
           getSchema2: basicForm2.value?.getSchema,
         });
       };
 
+      function handleValidateError(errorValues: any, formKey: string) {
+        const num = errorValues?.errorFields?.length;
+        if (num > 0) {
+          createMessage.warn(formKey + '共有' + num + '个字段验证失败!');
+          anchorItems.forEach((item) => {
+            if (item.key === formKey) {
+              item.fieldsError = num;
+            }
+          });
+          console.log('wwwww anchorItems:', anchorItems);
+        }
+        console.log('handleValidateError', errorValues);
+      }
+
       onMounted(() => {
-        // callChildFormMethods();
+        // callAllFormValidate();
+        // document.addEventListener('scroll', () => {
+        //   console.log('onMounted scroll', window.scrollY);
+        // });
       });
 
       return {
         schemas,
+        anchorItems,
+        getAnchorItems,
         optionsListApi,
         optionsA,
         optionsB,
@@ -727,22 +783,37 @@
           createMessage.info('handleValidateSuccess');
           console.log(values);
         },
-        handleValidateError: (errorValues: any) => {
-          const num = errorValues?.errorFields?.length;
-          if (num > 0) {
-            createMessage.warn('共有' + num + '个字段验证失败!');
-          }
-          console.log('handleValidateError', errorValues);
-        },
+        handleValidateError,
         handleSubmit: (values: any) => {
           createMessage.success('click search,values:' + JSON.stringify(values));
         },
         basicForm1,
         basicForm2,
-        callChildFormReset,
-        callChildFormMethods,
+        callAllFormSubmit,
+        callAllFormReset,
+        callAllFormValidate,
         check,
       };
     },
   });
 </script>
+<style lang="scss">
+  .btn-group {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .fields-error {
+    color: #fff;
+    background-color: #d00;
+    border-radius: 10px;
+    text-align: center;
+    line-height: 19px;
+    margin-left: 3px;
+    font-size: 12px;
+    font-weight: bold;
+    display: inline-block;
+    width: 19px;
+    height: 19px;
+  }
+</style>

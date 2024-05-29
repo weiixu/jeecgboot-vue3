@@ -176,14 +176,17 @@
         // BasicFormSchemas: <BasicFormSchemas />,
       };
 
-      const basicFormKey = Object.keys(FormMapping).map((key, inde) => {
-        return {
-          key: key,
-          href: `#${key}-${inde}`,
-          title: `${key}`,
-          type: FlowFormTypeEnum[key],
-        };
-      });
+      const basicFormKey = Object.keys(FormMapping)
+        .map((key, inde) => {
+          if ([FlowFormTypeEnum.DemoForm, FlowFormTypeEnum.BaseForm].includes(key as FlowFormTypeEnum)) return;
+          return {
+            key: key,
+            href: `#${key}-${inde}`,
+            title: `${key}`,
+            type: FlowFormTypeEnum[key],
+          };
+        })
+        .filter(Boolean) as IFlowFormDataItem[];
 
       const flowFormData: IFlowFormDataItem[] = reactive([
         {
